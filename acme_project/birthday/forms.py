@@ -1,7 +1,15 @@
 from django import forms
-
 # Импортируем класс модели Birthday.
 from .models import Birthday
+
+# class ContestForm(forms.ModelForm):
+#     class Meta:
+#         model = Contest
+#         widgets = {
+#             'description': forms.Textarea({'cols': '22', 'rows': '5'}),
+#             'comment': forms.Textarea({'cols': '22', 'rows': '5'})
+#         }
+#         fields = '__all__'
 
 # class BirthdayForm(forms.Form):
 #     first_name = forms.CharField(label='Имя', max_length=20)
@@ -28,11 +36,3 @@ class BirthdayForm(forms.ModelForm):
         fields = '__all__'
 
 
-# class ContestForm(forms.ModelForm):
-#     class Meta:
-#         model = Contest
-#         widgets = {
-#             'description': forms.Textarea({'cols': '22', 'rows': '5'}),
-#             'comment': forms.Textarea({'cols': '22', 'rows': '5'})
-#         }
-#         fields = '__all__'
