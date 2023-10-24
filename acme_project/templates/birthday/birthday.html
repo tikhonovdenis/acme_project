@@ -3,6 +3,13 @@
 {% load django_bootstrap5 %}
 
 {% block content %}
+    <!-- Если в пути запроса содержится строка /edit/. -->
+    {% if '/edit/' in request.path %}
+        <!-- Вывести заголовок и номер записи. -->
+        <h1>Редактировать запись {{ form.instance.pk }}</h1>
+    {% else %}
+        <h1>Создать запись</h1>
+    {% endif %}
     <div class="card col-4">
         <div class="card-header">
             Калькулятор ожидания дня рождения
