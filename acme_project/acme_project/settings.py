@@ -11,7 +11,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django_bootstrap5',
-    'django.contrib.auth',
+    'django.contrib.auth', # Приложение для работы с пользователями.
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',

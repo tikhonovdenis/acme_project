@@ -1,12 +1,24 @@
-# Импортируем шорткат для получения объекта или вызова 404 ошибки.
-from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import (
+    CreateView, DeleteView, DetailView, ListView, UpdateView
+)
 
 from .forms import BirthdayForm
 from .models import Birthday
-# Импортируем из utils.py функцию для подсчёта дней.
 from .utils import calculate_birthday_countdown
+
+
+# Импортируем шорткат для получения объекта или вызова 404 ошибки.
+# from django.shortcuts import get_object_or_404, redirect, render
+# from django.urls import reverse_lazy
+# from django.views.generic import (
+#     CreateView, DeleteView, DetailView, ListView, UpdateView
+# )
+#
+# from .forms import BirthdayForm
+# from .models import Birthday
+# # Импортируем из utils.py функцию для подсчёта дней.
+# from .utils import calculate_birthday_countdown
 
 
 # Импортируем класс пагинатора.
@@ -27,7 +39,7 @@ from .utils import calculate_birthday_countdown
 #             form.cleaned_data['birthday']
 #         )
 #         context.update({'birthday_countdown': birthday_countdown})
-#     return render(request, 'birthday/birthday.html', context)
+#     return render(request, 'birthday/birthday_form_history.html', context)
 
 class BirthdayListView(ListView):
     # Указываем модель, с которой работает CBV...
@@ -38,61 +50,85 @@ class BirthdayListView(ListView):
     paginate_by = 3
 
 
-# Добавим опциональный параметр pk.
-def birthday(request, pk=None):
-    # Если в запросе указан pk (если получен запрос на редактирование объекта):
-    if pk is not None:
-        # Получаем объект модели или выбрасываем 404 ошибку.
-        instance = get_object_or_404(Birthday, pk=pk)
-    # Если в запросе не указан pk
-    # (если получен запрос к странице создания записи):
-    else:
-        # Связывать форму с объектом не нужно, установим значение None.
-        instance = None
-        # Передаём в форму либо данные из запроса, либо None.
-        # В случае редактирования прикрепляем объект модели.
-    form = BirthdayForm(
-        request.POST or None,
-        # Файлы, переданные в запросе, указываются отдельно.
-        files=request.FILES or None,
-        instance=instance
-    )
-    # Остальной код без изменений
-    # Создаём словарь контекста сразу после инициализации формы.
-    context = {'form': form}
-    # Сохраняем данные, полученные из формы, и отправляем ответ:
-    # Если форма валидна...
-    if form.is_valid():
-        form.save()
-        # ...вызовем функцию подсчёта дней:
-        birthday_countdown = calculate_birthday_countdown(
-            form.cleaned_data['birthday']
-        )
-        # Обновляем словарь контекста: добавляем в него новый элемент.
-        context.update({'birthday_countdown': birthday_countdown})
-    return render(request, 'birthday/birthday.html', context)
+# # Добавим опциональный параметр pk.
+# def birthday(request, pk=None):
+#     # Если в запросе указан pk (если получен запрос на редактирование объекта):
+#     if pk is not None:
+#         # Получаем объект модели или выбрасываем 404 ошибку.
+#         instance = get_object_or_404(Birthday, pk=pk)
+#     # Если в запросе не указан pk
+#     # (если получен запрос к странице создания записи):
+#     else:
+#         # Связывать форму с объектом не нужно, установим значение None.
+#         instance = None
+#         # Передаём в форму либо данные из запроса, либо None.
+#         # В случае редактирования прикрепляем объект модели.
+#     form = BirthdayForm(
+#         request.POST or None,
+#         # Файлы, переданные в запросе, указываются отдельно.
+#         files=request.FILES or None,
+#         instance=instance
+#     )
+#     # Остальной код без изменений
+#     # Создаём словарь контекста сразу после инициализации формы.
+#     context = {'form': form}
+#     # Сохраняем данные, полученные из формы, и отправляем ответ:
+#     # Если форма валидна...
+#     if form.is_valid():
+#         form.save()
+#         # ...вызовем функцию подсчёта дней:
+#         birthday_countdown = calculate_birthday_countdown(
+#             form.cleaned_data['birthday']
+#         )
+#         # Обновляем словарь контекста: добавляем в него новый элемент.
+#         context.update({'birthday_countdown': birthday_countdown})
+#     return render(request, 'birthday/birthday_form_history.html', context)
 
 
 class BirthdayCreateView(CreateView):
     model = Birthday
     # Указываем имя формы:
-    form_class = BirthdayForm
-    template_name = 'birthday/birthday.html'
+    # form_class = BirthdayForm
+    # template_name = 'birthday/birthday_form_history.html'
     success_url = reverse_lazy('birthday:list')
+
+
+# Создаём миксин.
+# class BirthdayMixin:
+#     model = Birthday
+#     form_class = BirthdayForm
+#     template_name = 'birthday/birthday_form_history.html'
+#     success_url = reverse_lazy('birthday:list')
+
+
+# Добавляем миксин первым по списку родительских классов.
+class BirthdayCreateView(CreateView):
+    model = Birthday
+    form_class = BirthdayForm
 
 
 class BirthdayUpdateView(UpdateView):
     model = Birthday
     form_class = BirthdayForm
-    template_name = 'birthday/birthday.html'
-    success_url = reverse_lazy('birthday:list')
 
 
 class BirthdayDeleteView(DeleteView):
     model = Birthday
-    #template_name = 'birthday/birthday.html'
     success_url = reverse_lazy('birthday:list')
 
+
+class BirthdayDetailView(DetailView):
+    model = Birthday
+
+    def get_context_data(self, **kwargs):
+        # Получаем словарь контекста:
+        context = super().get_context_data(**kwargs)
+        # Добавляем в словарь новый ключ:
+        context['birthday_countdown'] = calculate_birthday_countdown(
+            # Дату рождения берём из объекта в словаре context:
+            self.object.birthday)
+        # Возвращаем словарь контекста.
+        return context
 
 # def birthday_list(request):
 #     # Получаем все объекты модели Birthday из БД.
@@ -133,23 +169,8 @@ class BirthdayDeleteView(DeleteView):
 #         # ...и переадресовываем пользователя на страницу со списком записей.
 #         return redirect('birthday:list')
 #     # Если был получен GET-запрос — отображаем форму.
-#     return render(request, 'birthday/birthday.html', context)
+#     return render(request, 'birthday/birthday_form_history.html', context)
 
 
-# # Создаём миксин.
-# class BirthdayMixin:
-#     model = Birthday
-#     form_class = BirthdayForm
-#     template_name = 'birthday/birthday.html'
-#     success_url = reverse_lazy('birthday:list')
 #
 #
-# # Добавляем миксин первым по списку родительских классов.
-# class BirthdayCreateView(BirthdayMixin, CreateView):
-#     # Не нужно описывать атрибуты: все они унаследованы от BirthdayMixin.
-#     pass
-#
-#
-# class BirthdayUpdateView(BirthdayMixin, UpdateView):
-#     # И здесь все атрибуты наследуются от BirthdayMixin.
-#     pass
