@@ -1,4 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+# Импортируем ошибку доступа:
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -6,11 +8,9 @@ from django.views.generic import (
 )
 
 from .forms import BirthdayForm
-from .models import Birthday
+from .forms import CongratulationForm
+from .models import Birthday, Congratulation
 from .utils import calculate_birthday_countdown
-
-# Импортируем ошибку доступа:
-from django.core.exceptions import PermissionDenied
 
 
 # from django.contrib.auth.decorators import login_required
@@ -55,9 +55,13 @@ from django.core.exceptions import PermissionDenied
 #         context.update({'birthday_countdown': birthday_countdown})
 #     return render(request, 'birthday/birthday_form_history.html', context)
 
-class BirthdayListView(LoginRequiredMixin, ListView):
+class BirthdayListView(ListView):
     # Указываем модель, с которой работает CBV...
     model = Birthday
+    # По умолчанию этот класс
+    # выполняет запрос queryset = Birthday.objects.all(),
+    # но мы его переопределим:
+    queryset = Birthday.objects.prefetch_related('tags').select_related('author')
     # ...сортировку, которая будет применена при выводе списка объектов:
     ordering = 'id'
     # ...и даже настройки пагинации:
@@ -159,8 +163,16 @@ class BirthdayDetailView(DetailView):
         context['birthday_countdown'] = calculate_birthday_countdown(
             # Дату рождения берём из объекта в словаре context:
             self.object.birthday)
-        # Возвращаем словарь контекста.
+        # Записываем в переменную form пустой объект формы.
+        context['form'] = CongratulationForm()
+        # Запрашиваем все поздравления для выбранного дня рождения.
+        context['congratulations'] = (
+            # Дополнительно подгружаем авторов комментариев,
+            # чтобы избежать множества запросов к БД.
+            self.object.congratulations.select_related('author')
+        )
         return context
+
 
 # def birthday_list(request):
 #     # Получаем все объекты модели Birthday из БД.
@@ -204,5 +216,22 @@ class BirthdayDetailView(DetailView):
 #     return render(request, 'birthday/birthday_form_history.html', context)
 
 
-#
-#
+class CongratulationCreateView(LoginRequiredMixin, CreateView):
+    birthday = None
+    model = Congratulation
+    form_class = CongratulationForm
+
+    # Переопределяем dispatch()
+    def dispatch(self, request, *args, **kwargs):
+        self.birthday = get_object_or_404(Birthday, pk=kwargs['pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    # Переопределяем form_valid()
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.birthday = self.birthday
+        return super().form_valid(form)
+
+    # Переопределяем get_success_url()
+    def get_success_url(self):
+        return reverse('birthday:detail', kwargs={'pk': self.birthday.pk})
