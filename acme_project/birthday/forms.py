@@ -40,6 +40,7 @@ class BirthdayForm(forms.ModelForm):
         model = Birthday
         # Чтобы форма работала как раньше — нужно указать, что для поля с датой рождения используется виджет с типом
         # данных date
+        exclude = ('author',)
         widgets = {'birthday': forms.DateInput(attrs={'type': 'date'})}
         # Указываем, что надо отобразить все поля.
         fields = '__all__'
